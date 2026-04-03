@@ -1,0 +1,60 @@
+# Agent Trader Configuration
+
+# TDash v9 Data Paths (adjust to your system)
+tdash:
+  data_dir: "~/Documents/quant_data/users/admin"  # Direct to user folder
+  user: "admin"
+
+# KR Broker (Agora API)
+kr_broker:
+  api_url: "https://kaigora.com/api/v1"
+  api_key: "YOUR_API_KEY_HERE"  # Get from Kaigora
+  db_path: "~/Documents/esc190f/kr-broker/kr_broker.db"
+  
+# Trading Preferences
+trading:
+  free_cash_threshold: 10000  # Auto-invest if idle cash > $10K
+  etf_preference: "QQQ"        # QQQ first, SPY fallback
+  etf_alternate: "SPY"
+  max_slippage_pct: 2.0        # Alert if gap > 2%
+  limit_order_timeout_hours: 1 # Escalate to market if no fill
+  
+  # TP/SL parameters
+  tp_enabled: true             # Set take-profit after buy
+  sl_enabled: true             # Set stop-loss after buy
+  default_tp_pct: 10           # Default TP % above entry
+  default_sl_pct: 5            # Default SL % below entry
+  profit_threshold_for_limit: 1.0  # % profit to use LIMIT sell
+  
+# Agent Schedule
+agent:
+  run_interval_hours: 6        # Run every 6 hours (4x/day)
+  check_interval_minutes: 5    # Check for fills between runs
+  signal_refresh_days: 3       # Fetch new signals every 3 days
+
+# LLM Execution Agent (GPT-4)
+llm:
+  provider: "openai"              # openai | anthropic | local
+  model: "gpt-4"                 # gpt-4, gpt-4-turbo, gpt-3.5-turbo
+  openai_api_key: ""              # Set in environment OPENAI_API_KEY
+  confidence_threshold: 0.80     # Skip if confidence < threshold
+  max_iterations: 3              # Max LLM calls per run
+  timeout_seconds: 10            # LLM response timeout
+  fallback_to_hardcoded: true    # Use hardcoded logic if LLM fails
+  
+  # Cost control
+  max_cost_per_run: 1.00         # Max $ spent on LLM per run
+  log_all_decisions: true        # Audit trail
+
+# MCDA Weights (Momentum-based, for CASH MANAGEMENT ONLY)
+mcda:
+  momentum_weight: 0.40        # 20-day price momentum
+  rsi_weight: 0.25              # RSI (oversold = higher priority)
+  volume_weight: 0.20           # Volume trend
+  volatility_weight: 0.15       # Lower volatility = safer hold
+  min_score_threshold: 30       # Sell lowest scorers first
+
+# Logging
+logging:
+  level: "INFO"
+  file: "agent_trader.log"
