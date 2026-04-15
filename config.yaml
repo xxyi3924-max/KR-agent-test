@@ -12,7 +12,7 @@ tdash:
 # KR Broker — local Flask proxy (port 8084)
 kr_broker:
   api_url: "http://localhost:8084"
-  api_key: "REDACTED"
+  api_key: ""              # Set via KR_BROKER_API_KEY env var
   db_path: "~/Documents/esc190f/kr-broker/kr_broker.db"
   
 # Trading Preferences

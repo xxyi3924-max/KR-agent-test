@@ -151,7 +151,7 @@ class DecisionEngine:
         broker_cfg = self.config.get("kr_broker", {})
         self.broker = KRBrokerConnector(
             api_url=broker_cfg.get("api_url", "http://localhost:8084"),
-            api_key=broker_cfg.get("api_key", ""),
+            api_key=broker_cfg.get("api_key") or os.getenv("KR_BROKER_API_KEY", ""),
         )
 
         self.mcda = MCDAMomentumEngine(self.config)
