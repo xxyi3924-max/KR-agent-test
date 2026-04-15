@@ -1,0 +1,91 @@
+# Agent Trader Configuration
+
+# TDash v9 Data Paths (adjust to your system)
+tdash:
+  data_dir: "~/quant_data/users/kr-agent@bot.local/runs"  # reads signals from bot account runs (US only)
+  user: "kr-agent@bot.local"
+  bot_user: "kr-agent@bot.local"             # bot's own TDash account (portfolio sync)
+  quant_data_dir: "~/quant_data"             # shared data root on Lightsail
+  period: "short"
+  risk_profile: "aggressive"
+
+# KR Broker — local Flask proxy (port 8084)
+kr_broker:
+  api_url: "http://localhost:8084"
+  api_key: "REDACTED"
+  db_path: "~/Documents/esc190f/kr-broker/kr_broker.db"
+  
+# Trading Preferences
+trading:
+  free_cash_threshold: 10000  # Auto-invest if idle cash > $10K
+  etf_preference: "QQQ"        # QQQ first, SPY fallback
+  etf_alternate: "SPY"
+  etf_monitor_min_invest: 100  # Minimum $ for ETFMonitor to invest
+  max_slippage_pct: 2.0        # Alert if gap > 2%
+  limit_order_timeout_hours: 1 # Escalate to market if no fill
+
+  # Signal selection rules (read by DecisionEngine from trading section)
+  composite_threshold: 0.56   # min TDash composite for ADD/NEW (SELL/TRIM always pass)
+  max_positions: 10           # hard cap on total positions (stocks + ETFs)
+  max_new_per_cycle: 2        # max NEW (never-held) names per cycle
+  min_position_dollars: 8000  # ADD or NEW dropped if dollar size below this
+
+# Real-time ETF Quant Monitor
+etf_monitor:
+  entry_threshold: 0.40        # Composite signal > 0.40 → BUY
+  exit_threshold: -0.20        # Composite signal < -0.20 → SELL (asymmetric)
+  min_hold_minutes: 10         # Must hold ≥ 10 min before selling
+  min_profit_bps: 3            # Net profit must exceed 3 bps to exit
+  max_vol_pct: 30.0            # Annual vol regime filter (skip if > 30%)
+  squeeze_bw_pct: 0.15         # BB bandwidth < 0.15% = squeeze → skip entry (1-min bars; 1.5% was calibrated for daily bars)
+
+  # ETFMonitor-specific session phase controls
+  open_skip_minutes: 30         # Skip entries for first 30 min of session (9:30-10:00 ET): gap volatility / price discovery
+  no_entry_minutes: 90          # No new entries within 90 min of close (after 2:30 PM ET): no profit runway
+  eod_close_minutes: 15         # Force-close open position this many minutes before close (MOC-style)
+
+  # Stop-loss controls
+  stop_loss_pct: 2.0            # Morning stop-loss: force-exit if price drops > 2% below entry
+  eod_tighten_stop_minutes: 60  # Within this many minutes of close, tighten stop to eod_stop_pct
+  eod_tighten_stop_pct: 1.0     # Tighter stop in final 60 min (less time to recover from adverse move)
+  breakeven_bps: 10             # If profit > 10 bps AND within eod_tighten_stop_minutes of close → move stop to entry
+
+  # TP/SL parameters
+  tp_enabled: true             # Set take-profit after buy
+  sl_enabled: true             # Set stop-loss after buy
+  default_tp_pct: 10           # Default TP % above entry
+  default_sl_pct: 5            # Default SL % below entry
+  profit_threshold_for_limit: 1.0  # % profit to use LIMIT sell
+  
+# Agent Schedule
+agent:
+  run_interval_hours: 6        # Run every 6 hours (4x/day)
+  check_interval_minutes: 5    # Check for fills between runs
+  signal_refresh_days: 3       # Fetch new signals every 3 days
+
+# LLM Execution Agent (GPT-4)
+llm:
+  provider: "openai"              # openai | anthropic | local
+  model: "gpt-4"                 # gpt-4, gpt-4-turbo, gpt-3.5-turbo
+  openai_api_key: ""              # Set in environment OPENAI_API_KEY
+  confidence_threshold: 0.80     # Skip if confidence < threshold
+  max_iterations: 3              # Max LLM calls per run
+  timeout_seconds: 10            # LLM response timeout
+  fallback_to_hardcoded: true    # Use hardcoded logic if LLM fails
+  
+  # Cost control
+  max_cost_per_run: 1.00         # Max $ spent on LLM per run
+  log_all_decisions: true        # Audit trail
+
+# MCDA Weights (Momentum-based, for CASH MANAGEMENT ONLY)
+mcda:
+  momentum_weight: 0.40        # 20-day price momentum
+  rsi_weight: 0.25              # RSI (oversold = higher priority)
+  volume_weight: 0.20           # Volume trend
+  volatility_weight: 0.15       # Lower volatility = safer hold
+  min_score_threshold: 30       # Sell lowest scorers first
+
+# Logging
+logging:
+  level: "INFO"
+  file: "agent_trader.log"
