@@ -4,3 +4,11 @@ __pycache__/
 *.egg-info/
 .env
 venv/
+.DS_Store
+
+# news_quant local state — never commit
+news_quant/.venv/
+news_quant/logs/
+news_quant/data/*.sqlite
+news_quant/data/bars/
+news_quant/data/*.parquet

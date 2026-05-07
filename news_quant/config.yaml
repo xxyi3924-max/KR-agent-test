@@ -1,0 +1,67 @@
+# news_quant subproject config — fully isolated from root config.yaml.
+# Budget, capital, and cost limits live here. Never share state with etf_monitor.
+
+budget:
+  capital_usd: 1000              # placeholder — user to set before live
+  llm_daily_cost_cap_usd: 10
+  infra_monthly_cost_cap_usd: 20
+  hard_stop_drawdown_pct: 15
+
+strategy:
+  default_index: QQQ
+  base_capital_pct: 1.0
+  signal_threshold: 0.05         # |dir × conf × mag/1000 × cred| floor; 0.05 ≈ moderate-conviction
+  tp_bps: 200
+  sl_bps: 80
+  max_positions: 1
+  max_cycles_per_day: 3
+  decay_half_life_min: 60
+  hold_minutes_default: 60       # max time-in-trade before forced exit (was 120, revised 2026-05-07)
+  entry_lag_min: 1               # minutes after acceptance to enter (was 15 in backtest; live wants faster)
+
+llm:
+  triage_model: claude-haiku-4-5
+  score_model: claude-haiku-4-5
+  score_model_high_impact: claude-sonnet-4-6
+  api_key_env: ANTHROPIC_API_KEY
+
+broker:
+  type: alpaca               # alpaca | kaigora  — kaigora is dry-run only until forward shadow clears
+  paper: true
+  trade_tag: news_quant
+  alpaca:
+    api_key_env: ALPACA_API_KEY
+    secret_env: ALPACA_SECRET_KEY
+    base_url: https://paper-api.alpaca.markets
+  kaigora:
+    api_url_env: KR_BROKER_URL
+    api_key_env: KR_BROKER_API_KEY
+    dry_run: true            # K1 — never place live orders during shadow phase
+
+http:
+  user_agent: "news_quant research/0.0 contact: xxyi.3924@gmail.com"
+  request_timeout_sec: 15
+
+sources:
+  edgar:
+    base_url: https://data.sec.gov
+    rate_limit_per_sec: 10        # SEC fair-access policy
+    bulk_atom_url: https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&output=atom
+  rss:
+    # broad press wires + market-news firehose (single-name oriented)
+    prnewswire:    https://www.prnewswire.com/rss/news-releases-list.rss
+    globenewswire: https://www.globenewswire.com/RssFeed/orgclass/1/feedTitle/GlobeNewswire%20-%20News%20about%20Public%20Companies
+    cnbc_top:      https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114
+    # NOTE: businesswire dropped 2026-05-07 — feed body says
+    #   "The RSS channel you requested was deactivated by the administrator."
+    #   No free public BW feed exists; would require paid Pro subscription.
+  per_symbol:
+    yahoo_finance: https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US
+    google_news:   https://news.google.com/rss/search?q=%22{ticker}%22&hl=en-US&gl=US&ceid=US:en
+  credibility:
+    edgar_8k:      1.0
+    prnewswire:    0.5    # noisy; rely on universe filter + LLM scoring
+    globenewswire: 0.5
+    cnbc_top:      0.7
+    yahoo_finance: 0.6    # enrichment context only, not standalone trade trigger
+    google_news:   0.5
